@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Modern, multi-targeted, zero runtime dependencies. -->
+    <TargetFrameworks>net9.0;net10.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <!-- Ship XML docs for public types without requiring a comment on every DTO
+         member/enum value (CS1591). API-mirroring choices the analyzers dislike
+         are intentional: a domain "Flag" type (CA1711) and string URLs (CA1056). -->
+    <NoWarn>$(NoWarn);CS1591;CS1573;CA1711;CA1056;CA1054</NoWarn>
+  </PropertyGroup>
+
+  <!-- NuGet package metadata -->
+  <PropertyGroup>
+    <PackageId>CommissionSight</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>CommissionSight</Authors>
+    <Company>CommissionSight</Company>
+    <Product>CommissionSight .NET SDK</Product>
+    <Description>Official .NET client for the CommissionSight API — commission-statement intelligence for insurance agencies. Covers the full API surface (carriers, configs, files, jobs, members, journeys, comparisons, reports, chargebacks, expected rates, webhooks, billing, and admin) with modern async, minimal dependencies, and targets net9.0 and net10.0.</Description>
+    <PackageTags>commissionsight;commission;insurance;reconciliation;sdk;api-client;medicare;ancillary</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/commissionsight/csharp-sdk</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/commissionsight/csharp-sdk</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Copyright>Copyright (c) 2026 CommissionSight</Copyright>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+  </PropertyGroup>
+
+  <!-- Reproducible builds + symbol package for debugging. -->
+  <PropertyGroup>
+    <Deterministic>true</Deterministic>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>
