@@ -406,6 +406,110 @@ public sealed record AttritionSeriesResult
     public IReadOnlyList<AttritionPoint> Data { get; init; } = [];
 }
 
+/// <summary>One period's row in a cumulative report (summed across carriers/workspaces).</summary>
+public sealed record CumulativePeriod
+{
+    public required string Period { get; init; }
+    public int Year { get; init; }
+    public int Month { get; init; }
+    public int MemberCount { get; init; }
+    public int Red { get; init; }
+    [JsonPropertyName("new")] public int New { get; init; }
+    public int Reappeared { get; init; }
+
+    /// <summary>Commission at risk this period (MoM shortfall), in dollars.</summary>
+    public decimal CommissionAtRisk { get; init; }
+
+    /// <summary>Expected-vs-actual commission owed (recoverable) this period, in dollars.</summary>
+    public decimal CommissionOwed { get; init; }
+
+    /// <summary>Records the owed figure could be computed for.</summary>
+    public int OwedEvaluated { get; init; }
+
+    /// <summary>All records considered for owed (coverage denominator).</summary>
+    public int OwedTotal { get; init; }
+
+    /// <summary><see cref="OwedEvaluated"/> ÷ <see cref="OwedTotal"/> (0 when nothing was evaluable).</summary>
+    public double OwedCoverage { get; init; }
+
+    public int ChargebackCount { get; init; }
+
+    /// <summary>Total commission clawed back this period (positive magnitude).</summary>
+    public decimal ChargebackAmount { get; init; }
+}
+
+/// <summary>One carrier's cumulative totals over the range.</summary>
+public sealed record CumulativeCarrier
+{
+    public required string CarrierId { get; init; }
+    public string? CarrierName { get; init; }
+    public decimal CommissionOwed { get; init; }
+    public decimal CommissionAtRisk { get; init; }
+    public decimal ChargebackAmount { get; init; }
+    public int OwedEvaluated { get; init; }
+    public int OwedTotal { get; init; }
+    public double OwedCoverage { get; init; }
+
+    /// <summary>Sum of per-period member counts (a volume — NOT distinct members).</summary>
+    public int MemberMonths { get; init; }
+
+    public int PeriodsCovered { get; init; }
+}
+
+/// <summary>The period span a cumulative report actually covered.</summary>
+public sealed record CumulativeRange
+{
+    /// <summary>Earliest period that actually had data in the range.</summary>
+    public string? From { get; init; }
+
+    /// <summary>Latest period that actually had data in the range.</summary>
+    public string? To { get; init; }
+
+    /// <summary>The <c>from</c> you asked for (null when omitted).</summary>
+    public string? RequestedFrom { get; init; }
+
+    /// <summary>The <c>to</c> you asked for (null when omitted).</summary>
+    public string? RequestedTo { get; init; }
+
+    public int PeriodsCovered { get; init; }
+}
+
+/// <summary>Cumulative totals summed over the range.</summary>
+public sealed record CumulativeTotals
+{
+    /// <summary>Σ expected-vs-actual commission owed (recoverable) over the range, in dollars.</summary>
+    public decimal CommissionOwed { get; init; }
+    public decimal CommissionAtRisk { get; init; }
+    public decimal ChargebackAmount { get; init; }
+    public int ChargebackCount { get; init; }
+    public int Red { get; init; }
+    [JsonPropertyName("new")] public int New { get; init; }
+    public int Reappeared { get; init; }
+    public int OwedEvaluated { get; init; }
+    public int OwedTotal { get; init; }
+
+    /// <summary>Cumulative owed coverage: Σ evaluated ÷ Σ total.</summary>
+    public double OwedCoverage { get; init; }
+
+    /// <summary>Member-MONTHS (Σ per-period counts) — a volume, NOT distinct members.</summary>
+    public int MemberMonths { get; init; }
+
+    public double AvgMembers { get; init; }
+    public int PeakMembers { get; init; }
+
+    /// <summary>True if any owed-contributing carrier is still on an auto-seeded estimate rate.</summary>
+    public bool OwedEstimated { get; init; }
+}
+
+/// <summary>Result of <c>CumulativeAsync</c> — an audit report over a period range.</summary>
+public sealed record CumulativeReport
+{
+    public required CumulativeRange Range { get; init; }
+    public required CumulativeTotals Totals { get; init; }
+    public IReadOnlyList<CumulativePeriod> ByPeriod { get; init; } = [];
+    public IReadOnlyList<CumulativeCarrier> ByCarrier { get; init; } = [];
+}
+
 /// <summary>Statement-quality signal for one carrier in a period.</summary>
 public sealed record DataQualitySignal
 {

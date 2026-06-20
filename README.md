@@ -114,6 +114,25 @@ var series  = await client.AttritionSeriesAsync(months: 12);
 var quality = await client.DataQualityAsync("2026-04");   // incomplete / wrong-period file detection
 var cbs     = await client.ListChargebacksAsync("2026-04"); // each traced to its original payout
 var journey = await client.GetMemberJourneyAsync("member_ref_id"); // full per-member audit history
+
+// Cumulative audit totals over a period range (owed / at-risk / chargebacks summed,
+// with byPeriod[] + byCarrier[] breakdowns) — the figures you take to a carrier audit.
+var audit = await client.CumulativeAsync(from: "2026-01", to: "2026-04");
+Console.WriteLine($"Owed over range: {audit.Totals.CommissionOwed:C} ({audit.Totals.OwedCoverage:P0} coverage)");
+```
+
+## Workspaces
+
+Multi-workspace accounts partition data by workspace; uploads and reports take an optional `workspaceId`.
+
+```csharp
+var ws = await client.ListWorkspacesAsync();
+if (ws.Enabled)
+{
+    var created = await client.CreateWorkspaceAsync("West Region");
+    await client.UploadFileAsync(file, "carrier1", 2026, 4, workspaceId: created.Id);
+    var rollup = await client.RollupAsync("2026-04", workspaceId: created.Id);
+}
 ```
 
 ## Admin

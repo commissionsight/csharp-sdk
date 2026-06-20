@@ -205,6 +205,54 @@ public class ClientTests
     }
 
     [Fact]
+    public async Task Cumulative_builds_range_query_and_parses_report()
+    {
+        var (client, handler) = Make(_ => StubHttpMessageHandler.Json(
+            """
+            {
+              "range": { "from": "2026-01", "to": "2026-04", "requestedFrom": "2026-01", "requestedTo": "2026-04", "periodsCovered": 4 },
+              "totals": { "commissionOwed": 1250.50, "commissionAtRisk": 800, "chargebackAmount": 75, "chargebackCount": 2,
+                "red": 8, "new": 5, "reappeared": 1, "owedEvaluated": 360, "owedTotal": 400, "owedCoverage": 0.9,
+                "memberMonths": 400, "avgMembers": 100, "peakMembers": 110, "owedEstimated": true },
+              "byPeriod": [ { "period": "2026-01", "year": 2026, "month": 1, "memberCount": 100, "red": 2, "new": 1,
+                "reappeared": 0, "commissionAtRisk": 200, "commissionOwed": 300.25, "owedEvaluated": 90, "owedTotal": 100,
+                "owedCoverage": 0.9, "chargebackCount": 0, "chargebackAmount": 0 } ],
+              "byCarrier": [ { "carrierId": "c1", "carrierName": "Acme", "commissionOwed": 1250.50, "commissionAtRisk": 800,
+                "chargebackAmount": 75, "owedEvaluated": 360, "owedTotal": 400, "owedCoverage": 0.9, "memberMonths": 400,
+                "periodsCovered": 4 } ]
+            }
+            """));
+
+        var report = await client.CumulativeAsync(from: "2026-01", to: "2026-04");
+
+        var uri = handler.LastRequest!.RequestUri!.ToString();
+        Assert.StartsWith($"{BaseUrl}/reports/cumulative?", uri);
+        Assert.Contains("from=2026-01", uri);
+        Assert.Contains("to=2026-04", uri);
+        Assert.Equal(1250.50m, report.Totals.CommissionOwed);
+        Assert.Equal(5, report.Totals.New);
+        Assert.True(report.Totals.OwedEstimated);
+        Assert.Equal(4, report.Range.PeriodsCovered);
+        Assert.Equal(300.25m, Assert.Single(report.ByPeriod).CommissionOwed);
+        Assert.Equal("Acme", Assert.Single(report.ByCarrier).CarrierName);
+    }
+
+    [Fact]
+    public async Task CreateWorkspace_posts_name_and_parses_workspace()
+    {
+        var (client, handler) = Make(_ => StubHttpMessageHandler.Json(
+            """{"id":"ws_2","name":"West Region","isDefault":false}"""));
+
+        var ws = await client.CreateWorkspaceAsync("West Region");
+
+        Assert.Equal(HttpMethod.Post, handler.LastRequest!.Method);
+        Assert.Equal($"{BaseUrl}/workspaces", handler.LastRequest.RequestUri!.ToString());
+        Assert.Contains("\"name\":\"West Region\"", handler.LastBody);
+        Assert.Equal("ws_2", ws.Id);
+        Assert.False(ws.IsDefault);
+    }
+
+    [Fact]
     public async Task Health_works_without_a_token()
     {
         var (client, handler) = Make(

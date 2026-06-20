@@ -446,6 +446,15 @@ public sealed partial class CommissionSightClient : IDisposable
     public Task<AttritionSeriesResult> AttritionSeriesAsync(int? months = null, string? carrierId = null, string? workspaceId = null, CancellationToken cancellationToken = default) =>
         SendAsync<AttritionSeriesResult>(HttpMethod.Get, "/reports/attrition-series" + Query(("months", Num(months)), ("carrierId", carrierId), ("workspaceId", workspaceId)), cancellationToken: cancellationToken);
 
+    /// <summary>
+    /// Cumulative audit totals over a period range — summed commission owed / at-risk /
+    /// chargebacks (+ counts) with per-period and per-carrier breakdowns, plus cumulative
+    /// owed coverage. <paramref name="from"/>/<paramref name="to"/> (YYYY-MM) are inclusive
+    /// and both optional (omit → all periods). The figures an agency takes to a carrier audit.
+    /// </summary>
+    public Task<CumulativeReport> CumulativeAsync(string? from = null, string? to = null, string? carrierId = null, string? workspaceId = null, CancellationToken cancellationToken = default) =>
+        SendAsync<CumulativeReport>(HttpMethod.Get, "/reports/cumulative" + Query(("from", from), ("to", to), ("carrierId", carrierId), ("workspaceId", workspaceId)), cancellationToken: cancellationToken);
+
     /// <summary>Statement-quality signal per carrier for a period (incomplete / wrong-period file detection).</summary>
     public Task<DataQualityReport> DataQualityAsync(string? period = null, string? workspaceId = null, CancellationToken cancellationToken = default) =>
         SendAsync<DataQualityReport>(HttpMethod.Get, "/reports/data-quality" + Query(("period", period), ("workspaceId", workspaceId)), cancellationToken: cancellationToken);
@@ -493,6 +502,14 @@ public sealed partial class CommissionSightClient : IDisposable
     /// <summary>The account's workspaces (and whether multi-workspace is enabled).</summary>
     public Task<WorkspacesInfo> ListWorkspacesAsync(CancellationToken cancellationToken = default) =>
         SendAsync<WorkspacesInfo>(HttpMethod.Get, "/workspaces", cancellationToken: cancellationToken);
+
+    /// <summary>
+    /// Create an additional workspace (requires the multi-workspace feature on the account;
+    /// returns <c>403 feature_not_enabled</c> otherwise). The new workspace is non-default;
+    /// pass its id as <c>workspaceId</c> to <see cref="UploadFileAsync"/> and reports.
+    /// </summary>
+    public Task<WorkspaceInfo> CreateWorkspaceAsync(string name, CancellationToken cancellationToken = default) =>
+        SendAsync<WorkspaceInfo>(HttpMethod.Post, "/workspaces", JsonBody(new { name }), cancellationToken: cancellationToken);
 
     /// <summary>Liveness probe (no auth required).</summary>
     public Task<HealthInfo> HealthAsync(CancellationToken cancellationToken = default) =>
