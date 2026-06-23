@@ -253,6 +253,85 @@ public class ClientTests
     }
 
     [Fact]
+    public async Task ListCarrierGroups_parses_brand_and_members()
+    {
+        var (client, handler) = Make(_ => StubHttpMessageHandler.Json(
+            """
+            {
+              "data": [{
+                "id": "grp_uhc", "name": "UHC", "slug": "uhc",
+                "members": [
+                  { "id": "car_uhc_med", "name": "UHC Medicare", "slug": "uhc-medicare" },
+                  { "id": "car_uhc_anc", "name": "UHC Ancillary", "slug": "uhc-ancillary" }
+                ]
+              }],
+              "pagination": { "limit": 50, "offset": 0, "hasMore": false }
+            }
+            """));
+
+        var page = await client.ListCarrierGroupsAsync();
+
+        Assert.Equal($"{BaseUrl}/carriers/groups", handler.LastRequest!.RequestUri!.ToString());
+        var group = Assert.Single(page.Data);
+        Assert.Equal("UHC", group.Name);
+        Assert.Equal(2, group.Members.Count);
+        Assert.Equal("UHC Medicare", group.Members[0].Name);
+    }
+
+    [Fact]
+    public async Task ResolveCarrier_posts_multipart_and_parses_ranked_candidates()
+    {
+        var (client, handler) = Make(_ => StubHttpMessageHandler.Json(
+            """
+            {
+              "groupId": "grp_uhc",
+              "ambiguous": false,
+              "best": { "carrierId": "car_uhc_med", "name": "UHC Medicare", "slug": "uhc-medicare",
+                "productLine": "medicare", "confidence": 0.92, "reason": "matched plan-code column" },
+              "ranked": [
+                { "carrierId": "car_uhc_med", "name": "UHC Medicare", "slug": "uhc-medicare",
+                  "productLine": "medicare", "confidence": 0.92, "reason": "matched plan-code column" },
+                { "carrierId": "car_uhc_anc", "name": "UHC Ancillary", "slug": "uhc-ancillary",
+                  "productLine": "ancillary", "confidence": 0.31, "reason": "weak header overlap" }
+              ]
+            }
+            """));
+
+        var file = FileUpload.FromBytes("a,b\n1,2\n"u8.ToArray(), "statement.csv", "text/csv");
+        var result = await client.ResolveCarrierAsync("grp_uhc", file);
+
+        Assert.Equal(HttpMethod.Post, handler.LastRequest!.Method);
+        Assert.Equal($"{BaseUrl}/carriers/resolve", handler.LastRequest.RequestUri!.ToString());
+        Assert.StartsWith("multipart/form-data", handler.LastRequest.Content!.Headers.ContentType!.MediaType);
+        Assert.False(result.Ambiguous);
+        Assert.Equal("car_uhc_med", result.Best!.CarrierId);
+        Assert.Equal(ProductLine.Medicare, result.Best.ProductLine);
+        Assert.Equal(0.92, result.Best.Confidence);
+        Assert.Equal(2, result.Ranked.Count);
+        Assert.Equal(ProductLine.Ancillary, result.Ranked[1].ProductLine);
+    }
+
+    [Fact]
+    public async Task ResolveCarrier_unknown_product_line_falls_back_to_Unknown()
+    {
+        var (client, _) = Make(_ => StubHttpMessageHandler.Json(
+            """
+            {
+              "groupId": "grp_x", "ambiguous": true, "best": null,
+              "ranked": [{ "carrierId": "car_x", "name": null, "slug": null,
+                "productLine": "dental_supplemental", "confidence": 0.1, "reason": "?" }]
+            }
+            """));
+
+        var file = FileUpload.FromBytes("x"u8.ToArray(), "s.csv", "text/csv");
+        var result = await client.ResolveCarrierAsync("grp_x", file);
+
+        Assert.True(result.Ambiguous);
+        Assert.Null(result.Best);
+        Assert.Equal(ProductLine.Unknown, Assert.Single(result.Ranked).ProductLine);
+    }
+
+    [Fact]
     public async Task Health_works_without_a_token()
     {
         var (client, handler) = Make(

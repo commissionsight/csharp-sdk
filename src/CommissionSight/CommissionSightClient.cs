@@ -227,6 +227,25 @@ public sealed partial class CommissionSightClient : IDisposable
     public Task<CarrierSummary> GetCarrierAsync(string carrierId, CancellationToken cancellationToken = default) =>
         SendAsync<CarrierSummary>(HttpMethod.Get, $"/carriers/{carrierId}", cancellationToken: cancellationToken);
 
+    /// <summary>List carrier groups (brands) and their per-product member carriers.</summary>
+    public Task<Page<CarrierGroup>> ListCarrierGroupsAsync(CancellationToken cancellationToken = default) =>
+        SendAsync<Page<CarrierGroup>>(HttpMethod.Get, "/carriers/groups", cancellationToken: cancellationToken);
+
+    /// <summary>
+    /// Resolve a carrier brand + a sample statement file to the concrete member carrier
+    /// it belongs to. Returns ranked candidates; check <c>Ambiguous</c> before trusting
+    /// <c>Best</c>.
+    /// </summary>
+    public Task<CarrierResolveResult> ResolveCarrierAsync(string groupId, FileUpload file, CancellationToken cancellationToken = default)
+    {
+        var form = new MultipartFormDataContent
+        {
+            { new StringContent(groupId), "groupId" },
+            { FileContent(file), "file", file.FileName },
+        };
+        return SendAsync<CarrierResolveResult>(HttpMethod.Post, "/carriers/resolve", form, cancellationToken: cancellationToken);
+    }
+
     /// <summary>List a carrier's config versions (global + your overrides).</summary>
     public Task<Page<JsonElement>> ListConfigsAsync(string carrierId, CancellationToken cancellationToken = default) =>
         SendAsync<Page<JsonElement>>(HttpMethod.Get, $"/carriers/{carrierId}/configs", cancellationToken: cancellationToken);

@@ -19,7 +19,7 @@
   <!-- NuGet package metadata -->
   <PropertyGroup>
     <PackageId>CommissionSight</PackageId>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <Authors>CommissionSight</Authors>
     <Company>CommissionSight</Company>
     <Product>CommissionSight .NET SDK</Product>
