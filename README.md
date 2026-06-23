@@ -104,6 +104,31 @@ while (true)
 }
 ```
 
+## Carriers
+
+List carriers, or list carrier **groups** (brands like "UHC" that fan out to a concrete carrier per
+product line). When you have a statement but don't know which member carrier it's from, `ResolveCarrierAsync`
+matches a brand + a sample file to ranked candidates:
+
+```csharp
+var groups = await client.ListCarrierGroupsAsync();
+var uhc = groups.Data.First(g => g.Slug == "uhc");
+
+using var sample = FileUpload.FromFile("mystery-statement.csv");
+var resolved = await client.ResolveCarrierAsync(uhc.Id, sample);
+
+if (!resolved.Ambiguous && resolved.Best is { } best)
+{
+    Console.WriteLine($"Looks like {best.Name} ({best.ProductLine}) — {best.Confidence:P0} confident");
+    await client.UploadFileAsync(sample, best.CarrierId, 2026, 4);
+}
+else
+{
+    foreach (var c in resolved.Ranked)
+        Console.WriteLine($"  candidate {c.Name} ({c.ProductLine}): {c.Confidence:P0} — {c.Reason}");
+}
+```
+
 ## Reports & analytics
 
 ```csharp

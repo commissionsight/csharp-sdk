@@ -118,6 +118,49 @@ public sealed record JobResultsPage
 
 // ─── Carriers & configs ───────────────────────────────────────────────────────
 
+/// <summary>A carrier brand (e.g. "UHC") and its per-product member carriers.</summary>
+public sealed record CarrierGroup
+{
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public required string Slug { get; init; }
+
+    /// <summary>The concrete carriers (one per product line) that belong to this brand.</summary>
+    public IReadOnlyList<CarrierSummary> Members { get; init; } = [];
+}
+
+/// <summary>One ranked candidate from <c>ResolveCarrierAsync</c>.</summary>
+public sealed record CarrierResolveCandidate
+{
+    public required string CarrierId { get; init; }
+    public string? Name { get; init; }
+    public string? Slug { get; init; }
+    public ProductLine ProductLine { get; init; }
+
+    /// <summary>Match confidence, 0..1.</summary>
+    public double Confidence { get; init; }
+
+    /// <summary>Why this candidate matched (human-readable).</summary>
+    public required string Reason { get; init; }
+}
+
+/// <summary>
+/// Result of resolving a brand + sample file to a concrete carrier. When
+/// <see cref="Ambiguous"/> is true, multiple candidates scored closely — inspect
+/// <see cref="Ranked"/> rather than trusting <see cref="Best"/> alone.
+/// </summary>
+public sealed record CarrierResolveResult
+{
+    public required string GroupId { get; init; }
+    public bool Ambiguous { get; init; }
+
+    /// <summary>The top candidate, or null when nothing matched.</summary>
+    public CarrierResolveCandidate? Best { get; init; }
+
+    /// <summary>All candidates, most confident first.</summary>
+    public IReadOnlyList<CarrierResolveCandidate> Ranked { get; init; } = [];
+}
+
 /// <summary>Result of creating a carrier config.</summary>
 public sealed record CreateConfigResult
 {

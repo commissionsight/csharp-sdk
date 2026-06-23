@@ -75,6 +75,15 @@ public enum WebhookEvent
     [JsonStringEnumMemberName("job.failed")] JobFailed,
 }
 
+/// <summary>The product line a carrier writes business in.</summary>
+public enum ProductLine
+{
+    Unknown = 0,
+    [JsonStringEnumMemberName("major_medical")] MajorMedical,
+    [JsonStringEnumMemberName("medicare")] Medicare,
+    [JsonStringEnumMemberName("ancillary")] Ancillary,
+}
+
 /// <summary>Account lifecycle status.</summary>
 public enum AccountStatus
 {
